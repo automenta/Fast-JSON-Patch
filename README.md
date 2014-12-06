@@ -6,7 +6,8 @@ Also support dual directions! I.e. you can both apply patches and generate patch
 
 **This version implements JSON-Patch+ an adhoc shorthand representation of the 'official' JSON-patch specification which is unnecessarily verbose.  Instead of words for the operations and object keys, we replace them with single characters in an array.  The whole point of JSON-patch is to reduce the amount of data transmitted or stored -- so why not avoid contradicting the fundamental principles?**
 
-TODO - patch applying for the modified standard
+**WARNING: Untested**
+
 
 ---
 

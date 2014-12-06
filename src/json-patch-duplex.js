@@ -6,14 +6,6 @@
  */
 var jsonpatch;
 (function (jsonpatch) {
-    /* Do nothing if module is already defined.
-       Doesn't look nice, as we cannot simply put
-       `!jsonpatch &&` before this immediate function call
-       in TypeScript.
-       */
-    /*  if (jsonpatch.observe) {
-          return;
-      }*/
     var _objectKeys = (function () {
         if (Object.keys)
             return Object.keys;
@@ -65,38 +57,38 @@ var jsonpatch;
      */
     /* The operations applicable to an object */
     var objOps = {
-        add: function (obj, key) {
+        "+": function (obj, key) {
             obj[key] = this.value;
             return true;
         },
-        remove: function (obj, key) {
+        '-': function (obj, key) {
             delete obj[key];
             return true;
         },
-        replace: function (obj, key) {
+        '=': function (obj, key) {
             obj[key] = this.value;
             return true;
         },
-        move: function (obj, key, tree) {
+        '/': function (obj, key, tree) {
             var temp = { op: "_get", path: this.from };
             apply(tree, [temp]);
             apply(tree, [
-                { op: "remove", path: this.from }
+                { op: "-", path: this.from }
             ]);
             apply(tree, [
-                { op: "add", path: this.path, value: temp.value }
+                { op: "+", path: this.path, value: temp.value }
             ]);
             return true;
         },
-        copy: function (obj, key, tree) {
+        '*': function (obj, key, tree) {
             var temp = { op: "_get", path: this.from };
             apply(tree, [temp]);
             apply(tree, [
-                { op: "add", path: this.path, value: temp.value }
+                { op: "+", path: this.path, value: temp.value }
             ]);
             return true;
         },
-        test: function (obj, key) {
+        '?': function (obj, key) {
             return _equals(obj[key], this.value);
         },
         _get: function (obj, key) {
@@ -105,30 +97,30 @@ var jsonpatch;
     };
     /* The operations applicable to an array. Many are the same as for the object */
     var arrOps = {
-        add: function (arr, i) {
+        "+": function (arr, i) {
             if (i > arr.length) {
                 throw new Error("The specified index MUST NOT be greater than the number of elements in the array.");
             }
             arr.splice(i, 0, this.value);
             return true;
         },
-        remove: function (arr, i) {
+        "-": function (arr, i) {
             arr.splice(i, 1);
             return true;
         },
-        replace: function (arr, i) {
+        "=": function (arr, i) {
             arr[i] = this.value;
             return true;
         },
-        move: objOps.move,
-        copy: objOps.copy,
-        test: objOps.test,
+        "/": objOps['/'],
+        "*": objOps['*'],
+        "?": objOps['?'],
         _get: objOps._get
     };
     /* The operations applicable to object root. Many are the same as for the object */
     var rootOps = {
-        add: function (obj) {
-            rootOps.remove.call(this, obj);
+        "+": function (obj) {
+            rootOps['-'].call(this, obj);
             for (var key in this.value) {
                 if (this.value.hasOwnProperty(key)) {
                     obj[key] = this.value[key];
@@ -136,26 +128,26 @@ var jsonpatch;
             }
             return true;
         },
-        remove: function (obj) {
+        "-": function (obj) {
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
-                    objOps.remove.call(this, obj, key);
+                    objOps['-'].call(this, obj, key);
                 }
             }
             return true;
         },
-        replace: function (obj) {
+        "=": function (obj) {
             apply(obj, [
-                { op: "remove", path: this.path }
+                { op: "-", path: this.path }
             ]);
             apply(obj, [
-                { op: "add", path: this.path, value: this.value }
+                { op: "+", path: this.path, value: this.value }
             ]);
             return true;
         },
-        move: objOps.move,
-        copy: objOps.copy,
-        test: function (obj) {
+        "/": objOps['/'],
+        "*": objOps['*'],
+        "?": function (obj) {
             //return (JSON.stringify(obj) === JSON.stringify(this.value));
             return _.isEqual(obj, this.value);
         },
@@ -509,10 +501,10 @@ var jsonpatch;
             var obj = tree;
             var t = 1; //skip empty element - http://jsperf.com/to-shift-or-not-to-shift
             var len = keys.length;
-            if (patch.value === undefined && (patch.op === "add" || patch.op === "replace" || patch.op === "test")) {
+            if (patch.value === undefined && (patch.op === "+" || patch.op === "=" || patch.op === "?")) {
                 throw new Error("'value' MUST be defined");
             }
-            if (patch.from === undefined && (patch.op === "copy" || patch.op === "move")) {
+            if (patch.from === undefined && (patch.op === "*" || patch.op === "/")) {
                 throw new Error("'from' MUST be defined");
             }
             while (true) {
