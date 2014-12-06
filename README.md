@@ -1,8 +1,15 @@
-Fast-JSON-Patch
+Fast(+Compact) JSON-Patch
 ===============
 
-A leaner and meaner implementation of JSON-Patch. Small footprint. High performance.
+A EVEN leaner and meaner implementation of JSON-Patch. Small & High performance.
 Also support dual directions! I.e. you can both apply patches and generate patches.
+
+**This version implements JSON-Patch+ an adhoc shorthand representation of the 'official' JSON-patch specification which is unnecessarily verbose.  Instead of words for the operations and object keys, we replace them with single characters in an array.  The whole point of JSON-patch is to reduce the amount of data transmitted or stored -- so why not avoid contradicting the fundamental principles?**
+
+TODO - patch applying for the modified standard
+
+---
+
 
 ## Why you should use JSON-Patch
 

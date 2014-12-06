@@ -5,6 +5,8 @@
  * MIT license
  */
 
+/// <reference path="lodash.d.ts" />
+
 interface Object {
   observe : any;
   deliverChangeRecords : any;
@@ -17,9 +19,9 @@ module jsonpatch {
      `!jsonpatch &&` before this immediate function call
      in TypeScript.
      */
-  if (jsonpatch.observe) {
+/*  if (jsonpatch.observe) {
       return;
-  }
+  }*/
 
 
   var _objectKeys = (function () {
@@ -175,33 +177,28 @@ module jsonpatch {
     move: objOps.move,
     copy: objOps.copy,
     test: function (obj) {
-      return (JSON.stringify(obj) === JSON.stringify(this.value));
+      
+      //return (JSON.stringify(obj) === JSON.stringify(this.value));
+        return _.isEqual(obj, this.value);
     },
     _get: objOps._get
   };
 
   var observeOps = {
     add: function (patches:any[], path) {
-      var patch = {
-        op: "add",
-        path: path + escapePathComponent(this.name),
-        value: this.object[this.name]};
-      patches.push(patch);
+      patches.push([
+        "+",path + escapePathComponent(this.name),this.object[this.name]
+      ]);
     },
     'delete': function (patches:any[], path) { //single quotes needed because 'delete' is a keyword in IE8
-      var patch = {
-        op: "remove",
-        path: path + escapePathComponent(this.name)
-      };
-      patches.push(patch);
+      patches.push([
+        "-", path + escapePathComponent(this.name)
+      ]);
     },
     update: function (patches:any[], path) {
-      var patch = {
-        op: "replace",
-        path: path + escapePathComponent(this.name),
-        value: this.object[this.name]
-      };
-      patches.push(patch);
+      patches.push([
+        "=",path + escapePathComponent(this.name),this.object[this.name]
+      ]);
     }
   };
 
@@ -303,7 +300,8 @@ module jsonpatch {
 
   function deepClone(obj:any) {
     if (typeof obj === "object") {
-      return JSON.parse(JSON.stringify(obj)); //Faster than ES5 clone - http://jsperf.com/deep-cloning-of-objects/5
+        return _.clone(obj, true);
+      //return JSON.parse(JSON.stringify(obj)); //Faster than ES5 clone - http://jsperf.com/deep-cloning-of-objects/5
     }
     else {
       return obj; //no need to clone primitives
@@ -506,12 +504,16 @@ module jsonpatch {
         else {
           if (oldVal != newVal) {
             changed = true;
-            patches.push({op: "replace", path: path + "/" + escapePathComponent(key), value: deepClone(newVal)});
+            patches.push([
+                '=',path + "/" + escapePathComponent(key),deepClone(newVal)
+            ]);
           }
         }
       }
       else {
-        patches.push({op: "remove", path: path + "/" + escapePathComponent(key)});
+        patches.push([
+            '-',path + "/" + escapePathComponent(key)
+        ]);
         deleted = true; // property has been deleted
       }
     }
@@ -523,7 +525,9 @@ module jsonpatch {
     for (var t = 0; t < newKeys.length; t++) {
       var key = newKeys[t];
       if (!mirror.hasOwnProperty(key)) {
-        patches.push({op: "add", path: path + "/" + escapePathComponent(key), value: deepClone(obj[key])});
+        patches.push([
+            '+',path + "/" + escapePathComponent(key),deepClone(obj[key])
+        ]);
       }
     }
   }
